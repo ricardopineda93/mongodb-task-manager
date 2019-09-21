@@ -3,21 +3,34 @@ const router = new express.Router();
 const Task = require('../models/task');
 const auth = require('../middleware/auth');
 
-// Configured with query string for control over data returned.
+// Configured with query string for control over data returned. /tasks?completed=true
+// Limit && Skip for paginiation /tasks?limit=10&skip=10
+// Sorting by timestamp /tasks?sortBy=createdAt:desc
 router.get('/tasks', auth, async (req, res) => {
   try {
     // const tasks = await Task.find({ owner: req.user._id });
 
     const match = {};
+    const sort = {};
 
     if (req.query.completed) {
       match.completed = req.query.completed === 'true';
     }
 
+    if (req.query.sortBy) {
+      const parts = req.query.sortBy.split(':');
+      sort[parts[0]] = parts[1] === 'desc' ? -1 : 1;
+    }
+
     await req.user
       .populate({
         path: 'tasks',
-        match
+        match,
+        options: {
+          limit: parseInt(req.query.limit, 10), //limits returned items per 'page' on first get
+          skip: parseInt(req.query.skip, 10), // increments next amount to get from request
+          sort
+        }
       })
       .execPopulate();
     res.send(req.user.tasks);
