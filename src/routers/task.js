@@ -3,10 +3,24 @@ const router = new express.Router();
 const Task = require('../models/task');
 const auth = require('../middleware/auth');
 
+// Configured with query string for control over data returned.
 router.get('/tasks', auth, async (req, res) => {
   try {
-    const tasks = await Task.find({ owner: req.user._id });
-    res.send(tasks);
+    // const tasks = await Task.find({ owner: req.user._id });
+
+    const match = {};
+
+    if (req.query.completed) {
+      match.completed = req.query.completed === 'true';
+    }
+
+    await req.user
+      .populate({
+        path: 'tasks',
+        match
+      })
+      .execPopulate();
+    res.send(req.user.tasks);
   } catch (error) {
     res.sendStatus(500);
   }
@@ -40,7 +54,7 @@ router.post('/tasks', auth, async (req, res) => {
   }
 });
 
-router.patch('/tasks/:id', async (req, res) => {
+router.patch('/tasks/:id', auth, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = ['description', 'completed'];
   const isValidToUpdate = updates.every(field =>
@@ -55,7 +69,10 @@ router.patch('/tasks/:id', async (req, res) => {
     //   new: true, //NEW returns updated object
     //   runValidators: true // Runs validation
     // });
-    const task = await Task.findById(req.params.id);
+    const task = await Task.findOne({
+      _id: req.params.id,
+      owner: req.user._id
+    });
 
     updates.forEach(field => (task[field] = req.body[field]));
 
@@ -68,9 +85,12 @@ router.patch('/tasks/:id', async (req, res) => {
   }
 });
 
-router.delete('/tasks/:id', async (req, res) => {
+router.delete('/tasks/:id', auth, async (req, res) => {
   try {
-    const deletedTask = await Task.findByIdAndDelete(req.params.id);
+    const deletedTask = await Task.findOneAndDelete({
+      _id: req.params.id,
+      owner: req.user._id
+    });
     if (!deletedTask) return res.sendStatus(404);
     res.send(deletedTask);
   } catch (error) {
