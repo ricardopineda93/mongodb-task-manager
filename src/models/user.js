@@ -49,7 +49,10 @@ const userSchema = new mongoose.Schema(
           required: true
         }
       }
-    ]
+    ],
+    avatar: {
+      type: Buffer
+    }
   },
   {
     timestamps: true
@@ -113,6 +116,9 @@ userSchema.methods.toJSON = function() {
   // Deleting sensitive fields from that object...
   delete userObject.password;
   delete userObject.tokens;
+
+  // Remove the avatar image from the response for speed and size.
+  delete userObject.avatar;
 
   // Sending back censored user fields...
   return userObject;
