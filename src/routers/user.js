@@ -18,7 +18,10 @@ const upload = multer({
     cb(undefined, true); // Callback to fire when our upload is successful.
   }
 });
-const { sendWelcomeEmail } = require('../emails/account');
+const {
+  sendWelcomeEmail,
+  sendCancellationEmail
+} = require('../emails/account');
 
 router.get('/users/me', auth, async (req, res) => {
   res.send(req.user);
@@ -152,8 +155,8 @@ router.delete('/users/me', auth, async (req, res) => {
     // Getting the user _id from the req object and passing it in here.
     // const deletedUser = await User.findByIdAndDelete(req.user._id);
     // if (!deletedUser) return res.sendStatus(404);
-
     await req.user.remove();
+    sendCancellationEmail(req.user.email, req.user.name);
     res.send(req.user);
   } catch (error) {
     res.sendStatus(500);

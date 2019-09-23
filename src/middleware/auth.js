@@ -7,7 +7,7 @@ const auth = async (req, res, next) => {
     const token = req.header('Authorization').replace('Bearer ', '');
 
     // Decoding the token value containing the field we chose to encode with our secret.
-    const decoded = jwt.verify(token, 'youathot');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Finding the user from the field we just decoded from the token AND who has the
     // token in the user token array.
